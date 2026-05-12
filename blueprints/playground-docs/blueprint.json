@@ -1,0 +1,43 @@
+{
+	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
+	"meta": {
+		"title": "Personal RAG Playground Docs Preview",
+		"author": "Fellyph Cintra",
+		"description": "Activates Personal RAG and imports WordPress Playground documentation posts for local indexing tests.",
+		"categories": [
+			"plugin",
+			"testing"
+		]
+	},
+	"landingPage": "/wp-admin/tools.php?page=personal-rag",
+	"preferredVersions": {
+		"php": "8.3",
+		"wp": "latest"
+	},
+	"steps": [
+		{
+			"step": "setSiteOptions",
+			"options": {
+				"blogname": "Personal RAG Playground Docs",
+				"blogdescription": "Local fixture content for Personal RAG",
+				"permalink_structure": "/%postname%/"
+			}
+		},
+		{
+			"step": "activatePlugin",
+			"pluginPath": "personal-rag/personal-rag.php"
+		},
+		{
+			"step": "importWxr",
+			"file": {
+				"resource": "bundled",
+				"path": "/content/playground-docs.wxr.xml"
+			}
+		},
+		{
+			"step": "login",
+			"username": "admin",
+			"password": "password"
+		}
+	]
+}

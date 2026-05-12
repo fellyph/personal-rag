@@ -67,6 +67,12 @@ npm test
 
 `npm run test:e2e` starts WordPress Playground with Playwright, imports `tests/fixtures/playground-docs.wxr.xml`, mocks Ollama in the browser, and covers the critical admin/index/search flows.
 
+Preview the plugin in WordPress Playground with the documentation fixture imported:
+
+```sh
+npx @wp-playground/cli server --mount=.:/wordpress/wp-content/plugins/personal-rag --php=8.3 --wp=latest --blueprint=blueprints/playground-docs --blueprint-may-read-adjacent-files
+```
+
 Translations are extracted to:
 
 ```sh
