@@ -1,0 +1,304 @@
+# Copyright (C) 2026 Fellyph Cintra
+# This file is distributed under the GPL-2.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Personal RAG 0.1.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/New project\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-05-12T12:54:52+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: personal-rag\n"
+
+#. Plugin Name of the plugin
+#: personal-rag.php
+#: includes/class-personal-rag-abilities.php:56
+#: includes/class-personal-rag-admin.php:23
+#: includes/class-personal-rag-admin.php:24
+#: includes/class-personal-rag-admin.php:88
+#: assets/personal-rag.js:136
+msgid "Personal RAG"
+msgstr ""
+
+#. Description of the plugin
+#: personal-rag.php
+msgid "Private local RAG over WordPress posts and pages using Ollama, EmbeddingGemma, Gemma 4, and SQLite-backed storage."
+msgstr ""
+
+#. Author of the plugin
+#: personal-rag.php
+msgid "Fellyph Cintra"
+msgstr ""
+
+#: includes/class-personal-rag-abilities.php:57
+msgid "Private local retrieval over WordPress content."
+msgstr ""
+
+#: includes/class-personal-rag-abilities.php:71
+msgid "Get Personal RAG Status"
+msgstr ""
+
+#: includes/class-personal-rag-abilities.php:72
+msgid "Returns local RAG index counts: source count, chunk count, queued embeddings, and embedded vectors."
+msgstr ""
+
+#: includes/class-personal-rag-abilities.php:113
+msgid "private rag, local search, site knowledge, blog search, embedded WordPress content"
+msgstr ""
+
+#: includes/class-personal-rag-admin.php:89
+msgid "Loading local search assistant..."
+msgstr ""
+
+#: includes/class-personal-rag-indexer.php:152
+msgid "Embedding model is required."
+msgstr ""
+
+#: includes/class-personal-rag-indexer.php:178
+msgid "Embedding dimension mismatch."
+msgstr ""
+
+#: includes/class-personal-rag-indexer.php:210
+msgid "Could not save embedding vector."
+msgstr ""
+
+#: includes/class-personal-rag-vectors.php:28
+msgid "Vector payload is invalid."
+msgstr ""
+
+#: includes/class-personal-rag-vectors.php:37
+msgid "Vector payload is empty."
+msgstr ""
+
+#. translators: %d: HTTP status code.
+#: assets/personal-rag.js:61
+#, js-format
+msgid "Request failed with status %d"
+msgstr ""
+
+#. translators: %d: HTTP status code.
+#: assets/personal-rag.js:77
+#, js-format
+msgid "Ollama request failed with status %d"
+msgstr ""
+
+#: assets/personal-rag.js:83
+msgid "Could not reach Ollama from this browser origin."
+msgstr ""
+
+#. translators: %s: Current browser origin.
+#: assets/personal-rag.js:91
+#, js-format
+msgid "Start Ollama with OLLAMA_ORIGINS=\"%s\" or add this origin to your existing OLLAMA_ORIGINS value."
+msgstr ""
+
+#: assets/personal-rag.js:137
+msgid "Ask questions against your local WordPress posts and pages using Ollama."
+msgstr ""
+
+#: assets/personal-rag.js:139
+msgid "Refresh"
+msgstr ""
+
+#: assets/personal-rag.js:143
+msgid "Local Models"
+msgstr ""
+
+#: assets/personal-rag.js:145
+msgid "Ollama endpoint"
+msgstr ""
+
+#: assets/personal-rag.js:146
+msgid "Embedding model"
+msgstr ""
+
+#: assets/personal-rag.js:147
+msgid "Chat model"
+msgstr ""
+
+#: assets/personal-rag.js:148
+#: assets/personal-rag.js:252
+#: assets/personal-rag.js:563
+#: assets/personal-rag.js:566
+msgid "Sources"
+msgstr ""
+
+#: assets/personal-rag.js:151
+msgid "Test Ollama"
+msgstr ""
+
+#. translators: 1: Embedding model command. 2: Chat model command.
+#: assets/personal-rag.js:154
+#, js-format
+msgid "Required local models: %1$s and %2$s."
+msgstr ""
+
+#: assets/personal-rag.js:163
+msgid "Ask Your Site"
+msgstr ""
+
+#: assets/personal-rag.js:166
+msgid "Ask something covered by your posts or pages."
+msgstr ""
+
+#: assets/personal-rag.js:168
+msgid "Ask"
+msgstr ""
+
+#: assets/personal-rag.js:190
+msgid "Local Index"
+msgstr ""
+
+#: assets/personal-rag.js:194
+msgid "Queue Changed Content"
+msgstr ""
+
+#: assets/personal-rag.js:195
+msgid "Rebuild Embeddings"
+msgstr ""
+
+#: assets/personal-rag.js:196
+msgid "Reset Index"
+msgstr ""
+
+#: assets/personal-rag.js:247
+msgid "Loading status..."
+msgstr ""
+
+#: assets/personal-rag.js:253
+msgid "Chunks"
+msgstr ""
+
+#: assets/personal-rag.js:254
+msgid "Queued"
+msgstr ""
+
+#: assets/personal-rag.js:255
+msgid "Embedded"
+msgstr ""
+
+#: assets/personal-rag.js:265
+msgid "Testing Ollama..."
+msgstr ""
+
+#. translators: %d: HTTP status code.
+#: assets/personal-rag.js:270
+#, js-format
+msgid "Ollama responded with status %d"
+msgstr ""
+
+#. translators: %s: Comma-separated model names.
+#: assets/personal-rag.js:283
+#, js-format
+msgid "Ollama is reachable, but these models were not listed: %s."
+msgstr ""
+
+#: assets/personal-rag.js:285
+msgid "Ollama is reachable and the configured models are available."
+msgstr ""
+
+#: assets/personal-rag.js:290
+msgid "Could not reach Ollama."
+msgstr ""
+
+#: assets/personal-rag.js:302
+msgid "Rebuilding local content chunks..."
+msgstr ""
+
+#: assets/personal-rag.js:302
+msgid "Queueing changed content..."
+msgstr ""
+
+#. translators: 1: Queued source count. 2: Unchanged source count.
+#: assets/personal-rag.js:310
+#, js-format
+msgid "Queued %1$d sources. %2$d unchanged."
+msgstr ""
+
+#: assets/personal-rag.js:322
+msgid "Preparing local index..."
+msgstr ""
+
+#. translators: %d: Embedded chunk count.
+#: assets/personal-rag.js:351
+#, js-format
+msgid "Index is ready. Embedded %d chunks locally."
+msgstr ""
+
+#: assets/personal-rag.js:357
+msgid "Untitled"
+msgstr ""
+
+#. translators: 1: Chunk count. 2: Embedding model name.
+#: assets/personal-rag.js:361
+#, js-format
+msgid "Embedding %1$d chunks with %2$s..."
+msgstr ""
+
+#: assets/personal-rag.js:414
+msgid "Ollama returned no embeddings."
+msgstr ""
+
+#: assets/personal-rag.js:436
+msgid "Reset the local RAG index? Your posts and pages will not be deleted."
+msgstr ""
+
+#: assets/personal-rag.js:441
+msgid "Resetting index..."
+msgstr ""
+
+#: assets/personal-rag.js:448
+msgid "Index reset."
+msgstr ""
+
+#: assets/personal-rag.js:466
+msgid "Searching local content..."
+msgstr ""
+
+#: assets/personal-rag.js:544
+msgid "You are a private RAG assistant running inside WordPress."
+msgstr ""
+
+#: assets/personal-rag.js:545
+msgid "Answer only from the provided local WordPress sources."
+msgstr ""
+
+#: assets/personal-rag.js:546
+msgid "Use citations like [1], [2] for claims."
+msgstr ""
+
+#: assets/personal-rag.js:547
+msgid "If the sources do not contain enough evidence, say that clearly and do not guess."
+msgstr ""
+
+#: assets/personal-rag.js:552
+msgid "No matching local sources were found."
+msgstr ""
+
+#. translators: 1: User question. 2: Newline separator. 3: Local sources text.
+#: assets/personal-rag.js:557
+#, js-format
+msgid "Question: %1$s%2$sLocal sources:%2$s%3$s"
+msgstr ""
+
+#: assets/personal-rag.js:563
+msgid "No local sources matched this question."
+msgstr ""
+
+#. translators: %s: Search result score.
+#: assets/personal-rag.js:568
+#, js-format
+msgid "Score %s"
+msgstr ""
+
+#: assets/personal-rag.js:573
+msgid "No answer returned."
+msgstr ""
+
+#: assets/personal-rag.js:713
+msgid "Invalid embedding vector."
+msgstr ""

@@ -1,0 +1,18 @@
+{
+	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
+	"landingPage": "/wp-admin/",
+	"preferredVersions": {
+		"php": "8.3",
+		"wp": "latest"
+	},
+	"steps": [
+		{
+			"step": "activatePlugin",
+			"pluginPath": "personal-rag/personal-rag.php"
+		},
+		{
+			"step": "runPHP",
+			"code": "<?php require '/wordpress/wp-content/plugins/personal-rag/tests/phpunit/run-in-playground.php';"
+		}
+	]
+}

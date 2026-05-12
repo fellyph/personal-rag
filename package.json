@@ -1,0 +1,22 @@
+{
+	"name": "personal-rag",
+	"version": "0.1.0",
+	"description": "Private local RAG over WordPress posts and pages using Ollama and WordPress Playground.",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"i18n": "wp i18n make-pot . languages/personal-rag.pot --domain=personal-rag --exclude=node_modules,vendor,tests,playwright-report,test-results",
+		"lint:js": "node --check assets/personal-rag.js",
+		"lint:php": "find . -path './vendor' -prune -o -path './node_modules' -prune -o -path './.tmp' -prune -o -name '*.php' -print0 | xargs -0 -n1 php -l",
+		"lint:phpcs": "vendor/bin/phpcs",
+		"test": "npm run lint:js && npm run lint:php && npm run lint:phpcs && npm run test:phpunit && npm run test:e2e",
+		"test:e2e": "playwright test",
+		"test:phpunit": "npx @wp-playground/cli run-blueprint --mount=.:/wordpress/wp-content/plugins/personal-rag --php=8.3 --wp=latest --blueprint=tests/blueprints/phpunit.json",
+		"test:phpunit:compat": "npx @wp-playground/cli run-blueprint --mount=.:/wordpress/wp-content/plugins/personal-rag --php=7.4 --wp=6.5 --blueprint=tests/blueprints/phpunit.json"
+	},
+	"devDependencies": {
+		"@playwright/test": "^1.52.0",
+		"@wordpress/scripts": "^30.17.0",
+		"@wp-playground/cli": "^2.0.19"
+	}
+}
