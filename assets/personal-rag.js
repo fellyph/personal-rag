@@ -92,7 +92,8 @@
 	}
 
 	function escapeHtml(value) {
-		return String(value || '').replace(/[&<>"']/g, function (char) {
+		var stringValue = value === null || typeof value === 'undefined' ? '' : value;
+		return String(stringValue).replace(/[&<>"']/g, function (char) {
 			return {
 				'&': '&amp;',
 				'<': '&lt;',
@@ -105,6 +106,10 @@
 
 	function setBusy(isBusy) {
 		state.isBusy = isBusy;
+		var root = document.getElementById('personal-rag-app');
+		if (root) {
+			root.setAttribute('aria-busy', isBusy ? 'true' : 'false');
+		}
 		document.querySelectorAll('#personal-rag-app button, #personal-rag-app input, #personal-rag-app textarea').forEach(function (el) {
 			if (el.dataset.alwaysEnabled === '1') {
 				return;
@@ -119,6 +124,8 @@
 			return;
 		}
 		notice.className = 'personal-rag-notice personal-rag-notice-' + (type || 'info');
+		notice.setAttribute('role', type === 'error' ? 'alert' : 'status');
+		notice.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
 		notice.textContent = message || '';
 		notice.hidden = !message;
 	}
@@ -132,43 +139,20 @@
 		root.innerHTML = [
 			'<div class="personal-rag-shell" data-testid="personal-rag-app">',
 			'<header class="personal-rag-header">',
-			'<div>',
+			'<div class="personal-rag-title-group">',
+			'<span class="personal-rag-kicker">' + escapeHtml(__('Tools / Local AI', 'personal-rag')) + '</span>',
 			'<h1>' + escapeHtml(__('Personal RAG', 'personal-rag')) + '</h1>',
-			'<p>' + escapeHtml(__('Ask questions against your local WordPress posts and pages using Ollama.', 'personal-rag')) + '</p>',
+			'<p>' + escapeHtml(__('Query private WordPress content with local Ollama models and an index stored on this site.', 'personal-rag')) + '</p>',
 			'</div>',
-			'<button type="button" class="button" id="personal-rag-refresh" data-testid="personal-rag-refresh">' + escapeHtml(__('Refresh', 'personal-rag')) + '</button>',
+			'<div class="personal-rag-header-actions">',
+			'<span class="personal-rag-origin">' + escapeHtml(siteLabel()) + '</span>',
+			buttonHtml('personal-rag-refresh', __('Refresh', 'personal-rag'), 'button', 'personal-rag-refresh', 'update'),
+			'</div>',
 			'</header>',
-			'<div id="personal-rag-notice" class="personal-rag-notice" hidden></div>',
-			'<section class="personal-rag-band personal-rag-settings">',
-			'<h2>' + escapeHtml(__('Local Models', 'personal-rag')) + '</h2>',
-			'<div class="personal-rag-grid">',
-			fieldHtml(__('Ollama endpoint', 'personal-rag'), 'endpoint', state.settings.endpoint, 'http://localhost:11434'),
-			fieldHtml(__('Embedding model', 'personal-rag'), 'embeddingModel', state.settings.embeddingModel, 'embeddinggemma'),
-			fieldHtml(__('Chat model', 'personal-rag'), 'chatModel', state.settings.chatModel, 'gemma4:e4b'),
-			fieldHtml(__('Sources', 'personal-rag'), 'topK', state.settings.topK, '5', 'number'),
-			'</div>',
-			'<div class="personal-rag-actions">',
-			'<button type="button" class="button" id="personal-rag-test" data-testid="personal-rag-test-ollama">' + escapeHtml(__('Test Ollama', 'personal-rag')) + '</button>',
-			'<span class="personal-rag-help">' + sprintf(
-				/* translators: 1: Embedding model command. 2: Chat model command. */
-				escapeHtml(__('Required local models: %1$s and %2$s.', 'personal-rag')),
-				'<code>ollama pull embeddinggemma</code>',
-				'<code>ollama pull gemma4:e4b</code>'
-			) + '</span>',
-			'</div>',
-			'</section>',
+			'<div id="personal-rag-notice" class="personal-rag-notice" role="status" aria-live="polite" aria-atomic="true" hidden></div>',
+			settingsHtml(),
 			config.canManageOptions ? indexHtml() : '',
-			'<section class="personal-rag-band">',
-			'<div class="personal-rag-chat-header">',
-			'<h2>' + escapeHtml(__('Ask Your Site', 'personal-rag')) + '</h2>',
-			'<span id="personal-rag-chat-state"></span>',
-			'</div>',
-			'<textarea id="personal-rag-question" rows="4" placeholder="' + escapeHtml(__('Ask something covered by your posts or pages.', 'personal-rag')) + '"></textarea>',
-			'<div class="personal-rag-actions">',
-			'<button type="button" class="button button-primary" id="personal-rag-ask" data-testid="personal-rag-ask">' + escapeHtml(__('Ask', 'personal-rag')) + '</button>',
-			'</div>',
-			'<div id="personal-rag-answer" class="personal-rag-answer" data-testid="personal-rag-answer" hidden></div>',
-			'</section>',
+			askHtml(),
 			'</div>',
 		].join('');
 
@@ -176,28 +160,101 @@
 		renderStatus();
 	}
 
+	function settingsHtml() {
+		return [
+			'<section class="personal-rag-panel personal-rag-settings">',
+			'<div class="personal-rag-section-head">',
+			'<div>',
+			'<h2>' + escapeHtml(__('Local Models', 'personal-rag')) + '</h2>',
+			'<p>' + escapeHtml(__('Browser requests are sent directly to Ollama; content stays inside WordPress and your local runtime.', 'personal-rag')) + '</p>',
+			'</div>',
+			buttonHtml('personal-rag-test', __('Test Ollama', 'personal-rag'), 'button', 'personal-rag-test-ollama', 'yes-alt'),
+			'</div>',
+			'<div class="personal-rag-grid">',
+			fieldHtml(__('Ollama endpoint', 'personal-rag'), 'endpoint', state.settings.endpoint, 'http://localhost:11434', 'text', __('The browser must be allowed by OLLAMA_ORIGINS.', 'personal-rag')),
+			fieldHtml(__('Embedding model', 'personal-rag'), 'embeddingModel', state.settings.embeddingModel, 'embeddinggemma', 'text', __('Used to index and search source chunks.', 'personal-rag')),
+			fieldHtml(__('Chat model', 'personal-rag'), 'chatModel', state.settings.chatModel, 'gemma4:e4b', 'text', __('Used to write cited answers.', 'personal-rag')),
+			fieldHtml(__('Sources', 'personal-rag'), 'topK', state.settings.topK, '5', 'number', __('Maximum matched sources per answer.', 'personal-rag')),
+			'</div>',
+			'<div class="personal-rag-model-note">',
+			'<span class="dashicons dashicons-info" aria-hidden="true"></span>',
+			'<span>' + sprintf(
+				/* translators: 1: Embedding model command. 2: Chat model command. */
+				escapeHtml(__('Required local models: %1$s and %2$s.', 'personal-rag')),
+				'<code>ollama pull embeddinggemma</code>',
+				'<code>ollama pull gemma4:e4b</code>'
+			) + '</span></div>',
+			'</section>',
+		].join('');
+	}
+
+	function askHtml() {
+		return [
+			'<section class="personal-rag-panel personal-rag-ask-panel">',
+			'<div class="personal-rag-chat-header">',
+			'<div>',
+			'<h2>' + escapeHtml(__('Ask Your Site', 'personal-rag')) + '</h2>',
+			'<p>' + escapeHtml(__('Answers are grounded in the indexed posts and pages returned by local vector search.', 'personal-rag')) + '</p>',
+			'</div>',
+			'<span id="personal-rag-chat-state" class="personal-rag-chip"></span>',
+			'</div>',
+			'<div class="personal-rag-compose">',
+			'<textarea id="personal-rag-question" rows="5" aria-describedby="personal-rag-question-help" placeholder="' + escapeHtml(__('Ask something covered by your posts or pages.', 'personal-rag')) + '"></textarea>',
+			buttonHtml('personal-rag-ask', __('Ask', 'personal-rag'), 'button button-primary', 'personal-rag-ask', 'search'),
+			'</div>',
+			'<p id="personal-rag-question-help" class="personal-rag-field-help">' + escapeHtml(__('Citations appear below the answer when local sources match the question.', 'personal-rag')) + '</p>',
+			'<div id="personal-rag-answer" class="personal-rag-answer" data-testid="personal-rag-answer" role="region" aria-live="polite" aria-label="' + escapeHtml(__('Answer', 'personal-rag')) + '" hidden></div>',
+			'</section>',
+		].join('');
+	}
+
 	function fieldHtml(label, key, value, placeholder, type) {
-		return '<label class="personal-rag-field">' +
-			'<span>' + escapeHtml(label) + '</span>' +
-			'<input type="' + (type || 'text') + '" data-setting="' + escapeHtml(key) + '" value="' + escapeHtml(value) + '" placeholder="' + escapeHtml(placeholder) + '">' +
-			'</label>';
+		var help = arguments.length > 5 ? arguments[5] : '';
+		var inputId = 'personal-rag-setting-' + key.replace(/[A-Z]/g, function (match) {
+			return '-' + match.toLowerCase();
+		});
+		var helpId = inputId + '-help';
+		var attributes = type === 'number' ? ' min="1" max="12" step="1" inputmode="numeric"' : '';
+		var describedBy = help ? ' aria-describedby="' + escapeHtml(helpId) + '"' : '';
+
+		return '<div class="personal-rag-field">' +
+			'<label for="' + escapeHtml(inputId) + '">' + escapeHtml(label) + '</label>' +
+			'<input id="' + escapeHtml(inputId) + '" type="' + (type || 'text') + '" data-setting="' + escapeHtml(key) + '" value="' + escapeHtml(value) + '" placeholder="' + escapeHtml(placeholder) + '"' + attributes + describedBy + '>' +
+			(help ? '<p id="' + escapeHtml(helpId) + '" class="personal-rag-field-help">' + escapeHtml(help) + '</p>' : '') +
+			'</div>';
 	}
 
 	function indexHtml() {
 		return [
-			'<section class="personal-rag-band">',
-			'<div class="personal-rag-index-head">',
+			'<section class="personal-rag-panel personal-rag-index-panel">',
+			'<div class="personal-rag-section-head personal-rag-index-head">',
+			'<div>',
 			'<h2>' + escapeHtml(__('Local Index', 'personal-rag')) + '</h2>',
-			'<div id="personal-rag-status" class="personal-rag-status" data-testid="personal-rag-status"></div>',
+			'<p>' + escapeHtml(__('Track local chunks, queued work, and embedded vectors before asking questions.', 'personal-rag')) + '</p>',
+			'</div>',
+			'<div id="personal-rag-status" class="personal-rag-status" data-testid="personal-rag-status" aria-live="polite"></div>',
 			'</div>',
 			'<div class="personal-rag-actions">',
-			'<button type="button" class="button" id="personal-rag-queue" data-testid="personal-rag-queue">' + escapeHtml(__('Queue Changed Content', 'personal-rag')) + '</button>',
-			'<button type="button" class="button button-primary" id="personal-rag-index" data-testid="personal-rag-rebuild">' + escapeHtml(__('Rebuild Embeddings', 'personal-rag')) + '</button>',
-			'<button type="button" class="button" id="personal-rag-reset" data-testid="personal-rag-reset">' + escapeHtml(__('Reset Index', 'personal-rag')) + '</button>',
+			buttonHtml('personal-rag-queue', __('Queue Changed Content', 'personal-rag'), 'button', 'personal-rag-queue', 'controls-repeat'),
+			buttonHtml('personal-rag-index', __('Rebuild Embeddings', 'personal-rag'), 'button button-primary', 'personal-rag-rebuild', 'update'),
+			buttonHtml('personal-rag-reset', __('Reset Index', 'personal-rag'), 'button personal-rag-button-danger', 'personal-rag-reset', 'trash'),
 			'</div>',
-			'<progress id="personal-rag-progress" value="0" max="100" hidden></progress>',
+			'<progress id="personal-rag-progress" value="0" max="100" aria-label="' + escapeHtml(__('Embedding progress', 'personal-rag')) + '" hidden></progress>',
 			'</section>',
 		].join('');
+	}
+
+	function buttonHtml(id, label, classes, testId, iconName) {
+		return '<button type="button" class="' + escapeHtml(classes) + '" id="' + escapeHtml(id) + '" data-testid="' + escapeHtml(testId) + '">' +
+			'<span class="dashicons dashicons-' + escapeHtml(iconName) + '" aria-hidden="true"></span>' +
+			'<span>' + escapeHtml(label) + '</span>' +
+			'</button>';
+	}
+
+	function siteLabel() {
+		return String(config.origin || window.location.origin || '')
+			.replace(/^https?:\/\//, '')
+			.replace(/\/$/, '');
 	}
 
 	function bindEvents() {
@@ -214,6 +271,7 @@
 				}
 				state.settings[key] = value;
 				saveSettings();
+				renderChatState();
 			});
 		});
 
@@ -238,13 +296,14 @@
 
 	function renderStatus() {
 		var statusEl = document.getElementById('personal-rag-status');
+		renderChatState();
 		if (!statusEl) {
 			return;
 		}
 
 		var status = state.status;
 		if (!status) {
-			statusEl.textContent = __('Loading status...', 'personal-rag');
+			statusEl.innerHTML = '<span class="personal-rag-status-loading">' + escapeHtml(__('Loading status...', 'personal-rag')) + '</span>';
 			return;
 		}
 
@@ -257,7 +316,17 @@
 	}
 
 	function statHtml(label, value) {
-		return '<span><strong>' + escapeHtml(value) + '</strong>' + escapeHtml(label) + '</span>';
+		return '<span class="personal-rag-stat"><strong>' + escapeHtml(value) + '</strong><span>' + escapeHtml(label) + '</span></span>';
+	}
+
+	function renderChatState() {
+		var chatState = document.getElementById('personal-rag-chat-state');
+		if (!chatState) {
+			return;
+		}
+
+		/* translators: 1: Chat model name. 2: Number of sources used for answers. */
+		chatState.textContent = sprintf(__('Using %1$s with up to %2$d sources', 'personal-rag'), state.settings.chatModel, state.settings.topK);
 	}
 
 	function testOllama() {
@@ -398,10 +467,12 @@
 		if (value === null) {
 			progress.hidden = true;
 			progress.value = 0;
+			progress.removeAttribute('aria-valuetext');
 			return;
 		}
 		progress.hidden = false;
 		progress.value = value;
+		progress.setAttribute('aria-valuetext', value + '%');
 	}
 
 	function embed(input) {

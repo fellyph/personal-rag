@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-05-12T12:54:52+00:00\n"
+"POT-Creation-Date: 2026-05-25T22:59:11+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: personal-rag\n"
@@ -20,7 +20,7 @@ msgstr ""
 #: includes/class-personal-rag-admin.php:23
 #: includes/class-personal-rag-admin.php:24
 #: includes/class-personal-rag-admin.php:88
-#: assets/personal-rag.js:136
+#: assets/personal-rag.js:144
 msgid "Personal RAG"
 msgstr ""
 
@@ -96,209 +96,259 @@ msgstr ""
 msgid "Start Ollama with OLLAMA_ORIGINS=\"%s\" or add this origin to your existing OLLAMA_ORIGINS value."
 msgstr ""
 
-#: assets/personal-rag.js:137
-msgid "Ask questions against your local WordPress posts and pages using Ollama."
-msgstr ""
-
-#: assets/personal-rag.js:139
-msgid "Refresh"
-msgstr ""
-
 #: assets/personal-rag.js:143
-msgid "Local Models"
+msgid "Tools / Local AI"
 msgstr ""
 
 #: assets/personal-rag.js:145
-msgid "Ollama endpoint"
+msgid "Query private WordPress content with local Ollama models and an index stored on this site."
 msgstr ""
 
-#: assets/personal-rag.js:146
-msgid "Embedding model"
+#: assets/personal-rag.js:149
+msgid "Refresh"
 msgstr ""
 
-#: assets/personal-rag.js:147
-msgid "Chat model"
+#: assets/personal-rag.js:168
+msgid "Local Models"
 msgstr ""
 
-#: assets/personal-rag.js:148
-#: assets/personal-rag.js:252
-#: assets/personal-rag.js:563
-#: assets/personal-rag.js:566
-msgid "Sources"
+#: assets/personal-rag.js:169
+msgid "Browser requests are sent directly to Ollama; content stays inside WordPress and your local runtime."
 msgstr ""
 
-#: assets/personal-rag.js:151
+#: assets/personal-rag.js:171
 msgid "Test Ollama"
 msgstr ""
 
+#: assets/personal-rag.js:174
+msgid "Ollama endpoint"
+msgstr ""
+
+#: assets/personal-rag.js:174
+msgid "The browser must be allowed by OLLAMA_ORIGINS."
+msgstr ""
+
+#: assets/personal-rag.js:175
+msgid "Embedding model"
+msgstr ""
+
+#: assets/personal-rag.js:175
+msgid "Used to index and search source chunks."
+msgstr ""
+
+#: assets/personal-rag.js:176
+msgid "Chat model"
+msgstr ""
+
+#: assets/personal-rag.js:176
+msgid "Used to write cited answers."
+msgstr ""
+
+#: assets/personal-rag.js:177
+#: assets/personal-rag.js:311
+#: assets/personal-rag.js:634
+#: assets/personal-rag.js:637
+msgid "Sources"
+msgstr ""
+
+#: assets/personal-rag.js:177
+msgid "Maximum matched sources per answer."
+msgstr ""
+
 #. translators: 1: Embedding model command. 2: Chat model command.
-#: assets/personal-rag.js:154
+#: assets/personal-rag.js:183
 #, js-format
 msgid "Required local models: %1$s and %2$s."
 msgstr ""
 
-#: assets/personal-rag.js:163
+#: assets/personal-rag.js:196
 msgid "Ask Your Site"
 msgstr ""
 
-#: assets/personal-rag.js:166
+#: assets/personal-rag.js:197
+msgid "Answers are grounded in the indexed posts and pages returned by local vector search."
+msgstr ""
+
+#: assets/personal-rag.js:202
 msgid "Ask something covered by your posts or pages."
 msgstr ""
 
-#: assets/personal-rag.js:168
+#: assets/personal-rag.js:203
 msgid "Ask"
 msgstr ""
 
-#: assets/personal-rag.js:190
+#: assets/personal-rag.js:205
+msgid "Citations appear below the answer when local sources match the question."
+msgstr ""
+
+#: assets/personal-rag.js:206
+msgid "Answer"
+msgstr ""
+
+#: assets/personal-rag.js:232
 msgid "Local Index"
 msgstr ""
 
-#: assets/personal-rag.js:194
+#: assets/personal-rag.js:233
+msgid "Track local chunks, queued work, and embedded vectors before asking questions."
+msgstr ""
+
+#: assets/personal-rag.js:238
 msgid "Queue Changed Content"
 msgstr ""
 
-#: assets/personal-rag.js:195
+#: assets/personal-rag.js:239
 msgid "Rebuild Embeddings"
 msgstr ""
 
-#: assets/personal-rag.js:196
+#: assets/personal-rag.js:240
 msgid "Reset Index"
 msgstr ""
 
-#: assets/personal-rag.js:247
+#: assets/personal-rag.js:242
+msgid "Embedding progress"
+msgstr ""
+
+#: assets/personal-rag.js:306
 msgid "Loading status..."
 msgstr ""
 
-#: assets/personal-rag.js:253
+#: assets/personal-rag.js:312
 msgid "Chunks"
 msgstr ""
 
-#: assets/personal-rag.js:254
+#: assets/personal-rag.js:313
 msgid "Queued"
 msgstr ""
 
-#: assets/personal-rag.js:255
+#: assets/personal-rag.js:314
 msgid "Embedded"
 msgstr ""
 
-#: assets/personal-rag.js:265
+#. translators: 1: Chat model name. 2: Number of sources used for answers.
+#: assets/personal-rag.js:329
+#, js-format
+msgid "Using %1$s with up to %2$d sources"
+msgstr ""
+
+#: assets/personal-rag.js:334
 msgid "Testing Ollama..."
 msgstr ""
 
 #. translators: %d: HTTP status code.
-#: assets/personal-rag.js:270
+#: assets/personal-rag.js:339
 #, js-format
 msgid "Ollama responded with status %d"
 msgstr ""
 
 #. translators: %s: Comma-separated model names.
-#: assets/personal-rag.js:283
+#: assets/personal-rag.js:352
 #, js-format
 msgid "Ollama is reachable, but these models were not listed: %s."
 msgstr ""
 
-#: assets/personal-rag.js:285
+#: assets/personal-rag.js:354
 msgid "Ollama is reachable and the configured models are available."
 msgstr ""
 
-#: assets/personal-rag.js:290
+#: assets/personal-rag.js:359
 msgid "Could not reach Ollama."
 msgstr ""
 
-#: assets/personal-rag.js:302
+#: assets/personal-rag.js:371
 msgid "Rebuilding local content chunks..."
 msgstr ""
 
-#: assets/personal-rag.js:302
+#: assets/personal-rag.js:371
 msgid "Queueing changed content..."
 msgstr ""
 
 #. translators: 1: Queued source count. 2: Unchanged source count.
-#: assets/personal-rag.js:310
+#: assets/personal-rag.js:379
 #, js-format
 msgid "Queued %1$d sources. %2$d unchanged."
 msgstr ""
 
-#: assets/personal-rag.js:322
+#: assets/personal-rag.js:391
 msgid "Preparing local index..."
 msgstr ""
 
 #. translators: %d: Embedded chunk count.
-#: assets/personal-rag.js:351
+#: assets/personal-rag.js:420
 #, js-format
 msgid "Index is ready. Embedded %d chunks locally."
 msgstr ""
 
-#: assets/personal-rag.js:357
+#: assets/personal-rag.js:426
 msgid "Untitled"
 msgstr ""
 
 #. translators: 1: Chunk count. 2: Embedding model name.
-#: assets/personal-rag.js:361
+#: assets/personal-rag.js:430
 #, js-format
 msgid "Embedding %1$d chunks with %2$s..."
 msgstr ""
 
-#: assets/personal-rag.js:414
+#: assets/personal-rag.js:485
 msgid "Ollama returned no embeddings."
 msgstr ""
 
-#: assets/personal-rag.js:436
+#: assets/personal-rag.js:507
 msgid "Reset the local RAG index? Your posts and pages will not be deleted."
 msgstr ""
 
-#: assets/personal-rag.js:441
+#: assets/personal-rag.js:512
 msgid "Resetting index..."
 msgstr ""
 
-#: assets/personal-rag.js:448
+#: assets/personal-rag.js:519
 msgid "Index reset."
 msgstr ""
 
-#: assets/personal-rag.js:466
+#: assets/personal-rag.js:537
 msgid "Searching local content..."
 msgstr ""
 
-#: assets/personal-rag.js:544
+#: assets/personal-rag.js:615
 msgid "You are a private RAG assistant running inside WordPress."
 msgstr ""
 
-#: assets/personal-rag.js:545
+#: assets/personal-rag.js:616
 msgid "Answer only from the provided local WordPress sources."
 msgstr ""
 
-#: assets/personal-rag.js:546
+#: assets/personal-rag.js:617
 msgid "Use citations like [1], [2] for claims."
 msgstr ""
 
-#: assets/personal-rag.js:547
+#: assets/personal-rag.js:618
 msgid "If the sources do not contain enough evidence, say that clearly and do not guess."
 msgstr ""
 
-#: assets/personal-rag.js:552
+#: assets/personal-rag.js:623
 msgid "No matching local sources were found."
 msgstr ""
 
 #. translators: 1: User question. 2: Newline separator. 3: Local sources text.
-#: assets/personal-rag.js:557
+#: assets/personal-rag.js:628
 #, js-format
 msgid "Question: %1$s%2$sLocal sources:%2$s%3$s"
 msgstr ""
 
-#: assets/personal-rag.js:563
+#: assets/personal-rag.js:634
 msgid "No local sources matched this question."
 msgstr ""
 
 #. translators: %s: Search result score.
-#: assets/personal-rag.js:568
+#: assets/personal-rag.js:639
 #, js-format
 msgid "Score %s"
 msgstr ""
 
-#: assets/personal-rag.js:573
+#: assets/personal-rag.js:644
 msgid "No answer returned."
 msgstr ""
 
-#: assets/personal-rag.js:713
+#: assets/personal-rag.js:784
 msgid "Invalid embedding vector."
 msgstr ""
