@@ -13,6 +13,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Maintains indexed WordPress content and stored embeddings.
  */
 class Personal_RAG_Indexer {
+	const CACHE_GROUP = 'personal_rag';
+
 	/**
 	 * Vector helper.
 	 *
@@ -38,15 +40,27 @@ class Personal_RAG_Indexer {
 		global $wpdb;
 
 		$tables = Personal_RAG_Schema::table_names();
+		$found  = false;
+		$status = wp_cache_get( 'status', self::CACHE_GROUP, false, $found );
 
-		return array(
-			'sources'    => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$tables['sources']}" ),
-			'chunks'     => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$tables['chunks']}" ),
-			'queued'     => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$tables['chunks']} WHERE embedding_status = 'queued'" ),
-			'embedded'   => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$tables['vectors']}" ),
+		if ( $found && is_array( $status ) ) {
+			return $status;
+		}
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery -- Counts are read from plugin-owned custom tables and cached.
+		$status = array(
+			'sources'    => (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $tables['sources'] ) ),
+			'chunks'     => (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $tables['chunks'] ) ),
+			'queued'     => (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE embedding_status = 'queued'", $tables['chunks'] ) ),
+			'embedded'   => (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $tables['vectors'] ) ),
 			'dbVersion'  => get_option( Personal_RAG_Schema::OPTION_VERSION ),
 			'indexables' => count( $this->get_indexable_post_ids() ),
 		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery
+
+		wp_cache_set( 'status', $status, self::CACHE_GROUP );
+
+		return $status;
 	}
 
 	/**
@@ -78,7 +92,15 @@ class Personal_RAG_Indexer {
 		}
 
 		$tables  = Personal_RAG_Schema::table_names();
-		$sources = $wpdb->get_results( "SELECT id, source_id FROM {$tables['sources']} WHERE source_type = 'post'", ARRAY_A );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Write workflow needs the current custom-table source list.
+		$sources = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT id, source_id FROM %i WHERE source_type = %s',
+				$tables['sources'],
+				'post'
+			),
+			ARRAY_A
+		);
 		foreach ( $sources as $source ) {
 			if ( ! isset( $seen[ (int) $source['source_id'] ] ) ) {
 				$this->delete_source_by_id( (int) $source['id'] );
@@ -101,19 +123,28 @@ class Personal_RAG_Indexer {
 
 		$tables = Personal_RAG_Schema::table_names();
 		$limit  = max( 1, min( 50, absint( $limit ) ) );
+		$key    = 'index_batch_' . $limit;
+		$found  = false;
+		$rows   = wp_cache_get( $key, self::CACHE_GROUP, false, $found );
 
-		$rows = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT c.id, c.chunk_index, c.chunk_text, c.token_estimate, s.title, s.url, s.source_id, s.post_type
-				FROM {$tables['chunks']} c
-				INNER JOIN {$tables['sources']} s ON s.id = c.source_id
-				WHERE c.embedding_status = 'queued'
-				ORDER BY s.updated_at DESC, c.id ASC
-				LIMIT %d",
-				$limit
-			),
-			ARRAY_A
-		);
+		if ( ! $found || ! is_array( $rows ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Plugin-owned custom table query cached by batch size.
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT c.id, c.chunk_index, c.chunk_text, c.token_estimate, s.title, s.url, s.source_id, s.post_type
+					FROM %i c
+					INNER JOIN %i s ON s.id = c.source_id
+					WHERE c.embedding_status = 'queued'
+					ORDER BY s.updated_at DESC, c.id ASC
+					LIMIT %d",
+					$tables['chunks'],
+					$tables['sources'],
+					$limit
+				),
+				ARRAY_A
+			);
+			wp_cache_set( $key, $rows, self::CACHE_GROUP );
+		}
 
 		$items = array();
 		foreach ( $rows as $row ) {
@@ -180,9 +211,11 @@ class Personal_RAG_Indexer {
 				);
 			}
 
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Write workflow needs the current chunk source.
 			$source_id = (int) $wpdb->get_var(
 				$wpdb->prepare(
-					"SELECT source_id FROM {$tables['chunks']} WHERE id = %d",
+					'SELECT source_id FROM %i WHERE id = %d',
+					$tables['chunks'],
 					$chunk_id
 				)
 			);
@@ -191,6 +224,7 @@ class Personal_RAG_Indexer {
 				continue;
 			}
 
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Writing to plugin-owned vector table.
 			$stored = $wpdb->replace(
 				$tables['vectors'],
 				array(
@@ -212,6 +246,7 @@ class Personal_RAG_Indexer {
 				);
 			}
 
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Updating plugin-owned chunk table.
 			$wpdb->update(
 				$tables['chunks'],
 				array(
@@ -228,6 +263,7 @@ class Personal_RAG_Indexer {
 		}
 
 		$this->mark_completed_sources( array_keys( $source_ids ) );
+		$this->flush_index_cache();
 
 		return array(
 			'saved'  => $saved,
@@ -256,32 +292,46 @@ class Personal_RAG_Indexer {
 
 		$tables    = Personal_RAG_Schema::table_names();
 		$dimension = count( $query_vector['values'] );
+		$row_key   = 'search_rows_' . md5( $dimension . '|' . $model );
+		$found     = false;
+		$rows      = wp_cache_get( $row_key, self::CACHE_GROUP, false, $found );
 
-		if ( '' !== $model ) {
-			$rows = $wpdb->get_results(
-				$wpdb->prepare(
-					"SELECT v.vector, v.norm, c.id AS chunk_id, c.chunk_index, c.chunk_text, s.title, s.url, s.source_id, s.post_type
-					FROM {$tables['vectors']} v
-					INNER JOIN {$tables['chunks']} c ON c.id = v.chunk_id
-					INNER JOIN {$tables['sources']} s ON s.id = c.source_id
-					WHERE v.dimensions = %d AND v.model = %s",
-					$dimension,
-					$model
-				),
-				ARRAY_A
-			);
-		} else {
-			$rows = $wpdb->get_results(
-				$wpdb->prepare(
-					"SELECT v.vector, v.norm, c.id AS chunk_id, c.chunk_index, c.chunk_text, s.title, s.url, s.source_id, s.post_type
-					FROM {$tables['vectors']} v
-					INNER JOIN {$tables['chunks']} c ON c.id = v.chunk_id
-					INNER JOIN {$tables['sources']} s ON s.id = c.source_id
-					WHERE v.dimensions = %d",
-					$dimension
-				),
-				ARRAY_A
-			);
+		if ( ! $found || ! is_array( $rows ) ) {
+			if ( '' !== $model ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Plugin-owned vector rows are cached per model/dimension.
+				$rows = $wpdb->get_results(
+					$wpdb->prepare(
+						"SELECT v.vector, v.norm, c.id AS chunk_id, c.chunk_index, c.chunk_text, s.title, s.url, s.source_id, s.post_type
+						FROM %i v
+						INNER JOIN %i c ON c.id = v.chunk_id
+						INNER JOIN %i s ON s.id = c.source_id
+						WHERE v.dimensions = %d AND v.model = %s",
+						$tables['vectors'],
+						$tables['chunks'],
+						$tables['sources'],
+						$dimension,
+						$model
+					),
+					ARRAY_A
+				);
+			} else {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Plugin-owned vector rows are cached per dimension.
+				$rows = $wpdb->get_results(
+					$wpdb->prepare(
+						"SELECT v.vector, v.norm, c.id AS chunk_id, c.chunk_index, c.chunk_text, s.title, s.url, s.source_id, s.post_type
+						FROM %i v
+						INNER JOIN %i c ON c.id = v.chunk_id
+						INNER JOIN %i s ON s.id = c.source_id
+						WHERE v.dimensions = %d",
+						$tables['vectors'],
+						$tables['chunks'],
+						$tables['sources'],
+						$dimension
+					),
+					ARRAY_A
+				);
+			}
+			wp_cache_set( $row_key, $rows, self::CACHE_GROUP );
 		}
 
 		$matches = array();
@@ -388,9 +438,11 @@ class Personal_RAG_Indexer {
 		$url          = $permalink ? $permalink : home_url( '?p=' . $post_id );
 		$now          = current_time( 'mysql' );
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Write workflow needs current plugin-owned source row.
 		$source = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT * FROM {$tables['sources']} WHERE source_type = %s AND source_id = %d",
+				'SELECT * FROM %i WHERE source_type = %s AND source_id = %d',
+				$tables['sources'],
 				'post',
 				$post_id
 			),
@@ -415,6 +467,7 @@ class Personal_RAG_Indexer {
 
 		if ( $source ) {
 			$source_id = (int) $source['id'];
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Updating plugin-owned source table.
 			$wpdb->update(
 				$tables['sources'],
 				$source_data,
@@ -423,6 +476,7 @@ class Personal_RAG_Indexer {
 				array( '%d' )
 			);
 		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Inserting into plugin-owned source table.
 			$wpdb->insert(
 				$tables['sources'],
 				$source_data,
@@ -444,6 +498,7 @@ class Personal_RAG_Indexer {
 		}
 
 		foreach ( $chunks as $index => $chunk_text ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Inserting into plugin-owned chunk table.
 			$wpdb->insert(
 				$tables['chunks'],
 				array(
@@ -459,6 +514,8 @@ class Personal_RAG_Indexer {
 				array( '%d', '%d', '%s', '%s', '%d', '%s', '%s', '%s' )
 			);
 		}
+
+		$this->flush_index_cache();
 
 		return 'queued';
 	}
@@ -567,9 +624,11 @@ class Personal_RAG_Indexer {
 		global $wpdb;
 
 		$tables = Personal_RAG_Schema::table_names();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Delete workflow needs the current source row ID.
 		$id     = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT id FROM {$tables['sources']} WHERE source_type = %s AND source_id = %d",
+				'SELECT id FROM %i WHERE source_type = %s AND source_id = %d',
+				$tables['sources'],
 				'post',
 				$post_id
 			)
@@ -589,9 +648,12 @@ class Personal_RAG_Indexer {
 		global $wpdb;
 
 		$tables = Personal_RAG_Schema::table_names();
-		$wpdb->query( "DELETE FROM {$tables['vectors']}" );
-		$wpdb->query( "DELETE FROM {$tables['chunks']}" );
-		$wpdb->query( "DELETE FROM {$tables['sources']}" );
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Resetting plugin-owned custom tables.
+		$wpdb->query( $wpdb->prepare( 'DELETE FROM %i', $tables['vectors'] ) );
+		$wpdb->query( $wpdb->prepare( 'DELETE FROM %i', $tables['chunks'] ) );
+		$wpdb->query( $wpdb->prepare( 'DELETE FROM %i', $tables['sources'] ) );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$this->flush_index_cache();
 	}
 
 	/**
@@ -605,7 +667,9 @@ class Personal_RAG_Indexer {
 
 		$tables = Personal_RAG_Schema::table_names();
 		$this->delete_chunks_for_source( $source_id );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Deleting from plugin-owned source table.
 		$wpdb->delete( $tables['sources'], array( 'id' => $source_id ), array( '%d' ) );
+		$this->flush_index_cache();
 	}
 
 	/**
@@ -618,13 +682,18 @@ class Personal_RAG_Indexer {
 		global $wpdb;
 
 		$tables = Personal_RAG_Schema::table_names();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Deleting from plugin-owned vector table.
 		$wpdb->query(
 			$wpdb->prepare(
-				"DELETE FROM {$tables['vectors']} WHERE chunk_id IN (SELECT id FROM {$tables['chunks']} WHERE source_id = %d)",
+				'DELETE FROM %i WHERE chunk_id IN (SELECT id FROM %i WHERE source_id = %d)',
+				$tables['vectors'],
+				$tables['chunks'],
 				$source_id
 			)
 		);
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Deleting from plugin-owned chunk table.
 		$wpdb->delete( $tables['chunks'], array( 'source_id' => $source_id ), array( '%d' ) );
+		$this->flush_index_cache();
 	}
 
 	/**
@@ -640,15 +709,19 @@ class Personal_RAG_Indexer {
 			return;
 		}
 
-		$tables = Personal_RAG_Schema::table_names();
+		$tables  = Personal_RAG_Schema::table_names();
+		$changed = false;
 		foreach ( $source_ids as $source_id ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Completion check must read current custom-table queue state.
 			$queued = (int) $wpdb->get_var(
 				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$tables['chunks']} WHERE source_id = %d AND embedding_status = 'queued'",
+					"SELECT COUNT(*) FROM %i WHERE source_id = %d AND embedding_status = 'queued'",
+					$tables['chunks'],
 					$source_id
 				)
 			);
 			if ( 0 === $queued ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Updating plugin-owned source table.
 				$wpdb->update(
 					$tables['sources'],
 					array( 'indexed_at' => current_time( 'mysql' ) ),
@@ -656,7 +729,20 @@ class Personal_RAG_Indexer {
 					array( '%s' ),
 					array( '%d' )
 				);
+				$changed = true;
 			}
 		}
+		if ( $changed ) {
+			$this->flush_index_cache();
+		}
+	}
+
+	/**
+	 * Clears cached index reads.
+	 *
+	 * @return void
+	 */
+	private function flush_index_cache() {
+		wp_cache_flush_group( self::CACHE_GROUP );
 	}
 }

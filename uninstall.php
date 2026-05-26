@@ -11,15 +11,21 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 
 global $wpdb;
 
-$tables = array(
+$personal_rag_tables = array(
 	$wpdb->prefix . 'personal_rag_vectors',
 	$wpdb->prefix . 'personal_rag_chunks',
 	$wpdb->prefix . 'personal_rag_sources',
 );
 
-foreach ( $tables as $table ) {
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange
-	$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
+foreach ( $personal_rag_tables as $personal_rag_table ) {
+	// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Removing plugin-owned custom tables on uninstall.
+	$wpdb->query(
+		$wpdb->prepare(
+			'DROP TABLE IF EXISTS %i',
+			$personal_rag_table
+		)
+	);
+	// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
 }
 
 delete_option( 'personal_rag_db_version' );
