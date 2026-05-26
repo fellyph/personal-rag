@@ -42,7 +42,7 @@ class Personal_RAG_Admin {
 		wp_enqueue_style(
 			'personal-rag-admin',
 			PERSONAL_RAG_URL . 'assets/personal-rag.css',
-			array(),
+			array( 'dashicons' ),
 			PERSONAL_RAG_VERSION
 		);
 
