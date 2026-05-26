@@ -71,7 +71,6 @@ class Personal_RAG_Plugin {
 		$this->rest      = new Personal_RAG_REST( $this->indexer );
 		$this->abilities = new Personal_RAG_Abilities( $this->indexer );
 
-		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 		add_action( 'plugins_loaded', array( $this->abilities, 'maybe_register' ) );
 		add_action( 'init', array( 'Personal_RAG_Schema', 'maybe_install_schema' ) );
 		add_action( 'admin_menu', array( $this->admin, 'add_admin_page' ) );
@@ -81,15 +80,6 @@ class Personal_RAG_Plugin {
 		add_action( 'before_delete_post', array( $this->indexer, 'handle_delete_post' ) );
 		add_action( 'trashed_post', array( $this->indexer, 'handle_delete_post' ) );
 		add_action( 'untrashed_post', array( $this->indexer, 'handle_untrashed_post' ) );
-	}
-
-	/**
-	 * Loads translations.
-	 *
-	 * @return void
-	 */
-	public function load_textdomain() {
-		load_plugin_textdomain( 'personal-rag', false, dirname( plugin_basename( PERSONAL_RAG_FILE ) ) . '/languages' );
 	}
 
 	/**

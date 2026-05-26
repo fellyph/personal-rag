@@ -1,8 +1,14 @@
+.git
 .git/
+.github
 .github/
+.distignore
+.gitignore
+.phpcs.xml.dist
 .DS_Store
 node_modules/
 vendor/
+tests/
 coverage/
 playwright-report/
 test-results/
@@ -10,3 +16,9 @@ test-results/
 *.log
 .env
 .env.*
+composer.json
+composer.lock
+package.json
+package-lock.json
+phpunit.xml.dist
+playwright.config.js
