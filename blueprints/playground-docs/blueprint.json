@@ -24,6 +24,18 @@
 			}
 		},
 		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "wordpress.org/plugins",
+				"slug": "ai-provider-for-ollama"
+			},
+			"options": {
+				"activate": true,
+				"targetFolderName": "ai-provider-for-ollama"
+			},
+			"ifAlreadyInstalled": "overwrite"
+		},
+		{
 			"step": "activatePlugin",
 			"pluginPath": "personal-rag/personal-rag.php"
 		},

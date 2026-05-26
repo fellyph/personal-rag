@@ -10,7 +10,7 @@ require_once __DIR__ . '/PersonalRagTestCase.php';
 /**
  * Tests indexing, vectors, and search.
  */
-class IndexerTest extends Personal_RAG_Test_Case {
+class Personal_RAG_Indexer_Test extends Personal_RAG_Test_Case {
 	/**
 	 * Schema installation creates usable tables and version metadata.
 	 */

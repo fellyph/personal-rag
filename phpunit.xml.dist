@@ -8,7 +8,7 @@
 >
 	<testsuites>
 		<testsuite name="Personal RAG">
-			<directory suffix=".php">tests/phpunit</directory>
+			<directory suffix="-test.php">tests/phpunit</directory>
 		</testsuite>
 	</testsuites>
 </phpunit>

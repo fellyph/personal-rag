@@ -19,6 +19,20 @@ abstract class Personal_RAG_Test_Case extends TestCase {
 	protected $indexer;
 
 	/**
+	 * Settings service.
+	 *
+	 * @var Personal_RAG_Settings
+	 */
+	protected $settings;
+
+	/**
+	 * AI integration service.
+	 *
+	 * @var Personal_RAG_AI
+	 */
+	protected $ai;
+
+	/**
 	 * User IDs created by the test.
 	 *
 	 * @var array<int,int>
@@ -33,6 +47,9 @@ abstract class Personal_RAG_Test_Case extends TestCase {
 
 		Personal_RAG_Schema::install_schema();
 		$this->indexer = Personal_RAG_Plugin::instance()->indexer();
+		$this->settings = Personal_RAG_Plugin::instance()->settings();
+		$this->ai       = Personal_RAG_Plugin::instance()->ai();
+		delete_option( Personal_RAG_Settings::OPTION_NAME );
 		$this->delete_all_posts_and_pages();
 		$this->indexer->reset_index();
 		wp_set_current_user( 0 );
@@ -44,6 +61,9 @@ abstract class Personal_RAG_Test_Case extends TestCase {
 	protected function tearDown(): void {
 		wp_set_current_user( 0 );
 		$this->indexer->reset_index();
+		delete_option( Personal_RAG_Settings::OPTION_NAME );
+		remove_all_filters( 'personal_rag_ai_status' );
+		remove_all_filters( 'personal_rag_pre_generate_answer' );
 		$this->delete_all_posts_and_pages();
 
 		foreach ( $this->created_users as $user_id ) {
@@ -108,6 +128,22 @@ abstract class Personal_RAG_Test_Case extends TestCase {
 
 		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
 		return base64_encode( $binary );
+	}
+
+	/**
+	 * Creates a JSON REST request for direct endpoint tests.
+	 *
+	 * @param string              $method Route method.
+	 * @param string              $route  REST route.
+	 * @param array<string,mixed> $params JSON body params.
+	 * @return WP_REST_Request
+	 */
+	protected function json_request( $method, $route, $params = array() ) {
+		$request = new WP_REST_Request( $method, $route );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_body( wp_json_encode( $params ) );
+
+		return $request;
 	}
 
 	/**

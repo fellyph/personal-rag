@@ -5,21 +5,22 @@
  * @package Personal_RAG
  */
 
-if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
+if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) || ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 global $wpdb;
 
-$tables = array(
+$personal_rag_tables = array(
 	$wpdb->prefix . 'personal_rag_vectors',
 	$wpdb->prefix . 'personal_rag_chunks',
 	$wpdb->prefix . 'personal_rag_sources',
 );
 
-foreach ( $tables as $table ) {
+foreach ( $personal_rag_tables as $personal_rag_table ) {
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange
-	$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
+	$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $personal_rag_table ) );
 }
 
 delete_option( 'personal_rag_db_version' );
+delete_option( 'personal_rag_settings' );

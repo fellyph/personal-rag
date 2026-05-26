@@ -40,10 +40,10 @@ class Personal_RAG_Indexer {
 		$tables = Personal_RAG_Schema::table_names();
 
 		return array(
-			'sources'    => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$tables['sources']}" ),
-			'chunks'     => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$tables['chunks']}" ),
-			'queued'     => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$tables['chunks']} WHERE embedding_status = 'queued'" ),
-			'embedded'   => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$tables['vectors']}" ),
+			'sources'    => (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $tables['sources'] ) ),
+			'chunks'     => (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $tables['chunks'] ) ),
+			'queued'     => (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE embedding_status = %s', $tables['chunks'], 'queued' ) ),
+			'embedded'   => (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $tables['vectors'] ) ),
 			'dbVersion'  => get_option( Personal_RAG_Schema::OPTION_VERSION ),
 			'indexables' => count( $this->get_indexable_post_ids() ),
 		);
@@ -78,7 +78,14 @@ class Personal_RAG_Indexer {
 		}
 
 		$tables  = Personal_RAG_Schema::table_names();
-		$sources = $wpdb->get_results( "SELECT id, source_id FROM {$tables['sources']} WHERE source_type = 'post'", ARRAY_A );
+		$sources = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT id, source_id FROM %i WHERE source_type = %s',
+				$tables['sources'],
+				'post'
+			),
+			ARRAY_A
+		);
 		foreach ( $sources as $source ) {
 			if ( ! isset( $seen[ (int) $source['source_id'] ] ) ) {
 				$this->delete_source_by_id( (int) $source['id'] );
@@ -104,12 +111,15 @@ class Personal_RAG_Indexer {
 
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT c.id, c.chunk_index, c.chunk_text, c.token_estimate, s.title, s.url, s.source_id, s.post_type
-				FROM {$tables['chunks']} c
-				INNER JOIN {$tables['sources']} s ON s.id = c.source_id
-				WHERE c.embedding_status = 'queued'
+				'SELECT c.id, c.chunk_index, c.chunk_text, c.token_estimate, s.title, s.url, s.source_id, s.post_type
+				FROM %i c
+				INNER JOIN %i s ON s.id = c.source_id
+				WHERE c.embedding_status = %s
 				ORDER BY s.updated_at DESC, c.id ASC
-				LIMIT %d",
+				LIMIT %d',
+				$tables['chunks'],
+				$tables['sources'],
+				'queued',
 				$limit
 			),
 			ARRAY_A
@@ -182,7 +192,8 @@ class Personal_RAG_Indexer {
 
 			$source_id = (int) $wpdb->get_var(
 				$wpdb->prepare(
-					"SELECT source_id FROM {$tables['chunks']} WHERE id = %d",
+					'SELECT source_id FROM %i WHERE id = %d',
+					$tables['chunks'],
 					$chunk_id
 				)
 			);
@@ -260,11 +271,14 @@ class Personal_RAG_Indexer {
 		if ( '' !== $model ) {
 			$rows = $wpdb->get_results(
 				$wpdb->prepare(
-					"SELECT v.vector, v.norm, c.id AS chunk_id, c.chunk_index, c.chunk_text, s.title, s.url, s.source_id, s.post_type
-					FROM {$tables['vectors']} v
-					INNER JOIN {$tables['chunks']} c ON c.id = v.chunk_id
-					INNER JOIN {$tables['sources']} s ON s.id = c.source_id
-					WHERE v.dimensions = %d AND v.model = %s",
+					'SELECT v.vector, v.norm, c.id AS chunk_id, c.chunk_index, c.chunk_text, s.title, s.url, s.source_id, s.post_type
+					FROM %i v
+					INNER JOIN %i c ON c.id = v.chunk_id
+					INNER JOIN %i s ON s.id = c.source_id
+					WHERE v.dimensions = %d AND v.model = %s',
+					$tables['vectors'],
+					$tables['chunks'],
+					$tables['sources'],
 					$dimension,
 					$model
 				),
@@ -273,11 +287,14 @@ class Personal_RAG_Indexer {
 		} else {
 			$rows = $wpdb->get_results(
 				$wpdb->prepare(
-					"SELECT v.vector, v.norm, c.id AS chunk_id, c.chunk_index, c.chunk_text, s.title, s.url, s.source_id, s.post_type
-					FROM {$tables['vectors']} v
-					INNER JOIN {$tables['chunks']} c ON c.id = v.chunk_id
-					INNER JOIN {$tables['sources']} s ON s.id = c.source_id
-					WHERE v.dimensions = %d",
+					'SELECT v.vector, v.norm, c.id AS chunk_id, c.chunk_index, c.chunk_text, s.title, s.url, s.source_id, s.post_type
+					FROM %i v
+					INNER JOIN %i c ON c.id = v.chunk_id
+					INNER JOIN %i s ON s.id = c.source_id
+					WHERE v.dimensions = %d',
+					$tables['vectors'],
+					$tables['chunks'],
+					$tables['sources'],
 					$dimension
 				),
 				ARRAY_A
@@ -390,7 +407,8 @@ class Personal_RAG_Indexer {
 
 		$source = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT * FROM {$tables['sources']} WHERE source_type = %s AND source_id = %d",
+				'SELECT * FROM %i WHERE source_type = %s AND source_id = %d',
+				$tables['sources'],
 				'post',
 				$post_id
 			),
@@ -569,7 +587,8 @@ class Personal_RAG_Indexer {
 		$tables = Personal_RAG_Schema::table_names();
 		$id     = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT id FROM {$tables['sources']} WHERE source_type = %s AND source_id = %d",
+				'SELECT id FROM %i WHERE source_type = %s AND source_id = %d',
+				$tables['sources'],
 				'post',
 				$post_id
 			)
@@ -589,9 +608,9 @@ class Personal_RAG_Indexer {
 		global $wpdb;
 
 		$tables = Personal_RAG_Schema::table_names();
-		$wpdb->query( "DELETE FROM {$tables['vectors']}" );
-		$wpdb->query( "DELETE FROM {$tables['chunks']}" );
-		$wpdb->query( "DELETE FROM {$tables['sources']}" );
+		$wpdb->query( $wpdb->prepare( 'DELETE FROM %i', $tables['vectors'] ) );
+		$wpdb->query( $wpdb->prepare( 'DELETE FROM %i', $tables['chunks'] ) );
+		$wpdb->query( $wpdb->prepare( 'DELETE FROM %i', $tables['sources'] ) );
 	}
 
 	/**
@@ -620,7 +639,9 @@ class Personal_RAG_Indexer {
 		$tables = Personal_RAG_Schema::table_names();
 		$wpdb->query(
 			$wpdb->prepare(
-				"DELETE FROM {$tables['vectors']} WHERE chunk_id IN (SELECT id FROM {$tables['chunks']} WHERE source_id = %d)",
+				'DELETE FROM %i WHERE chunk_id IN (SELECT id FROM %i WHERE source_id = %d)',
+				$tables['vectors'],
+				$tables['chunks'],
 				$source_id
 			)
 		);
@@ -644,8 +665,10 @@ class Personal_RAG_Indexer {
 		foreach ( $source_ids as $source_id ) {
 			$queued = (int) $wpdb->get_var(
 				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$tables['chunks']} WHERE source_id = %d AND embedding_status = 'queued'",
-					$source_id
+					'SELECT COUNT(*) FROM %i WHERE source_id = %d AND embedding_status = %s',
+					$tables['chunks'],
+					$source_id,
+					'queued'
 				)
 			);
 			if ( 0 === $queued ) {

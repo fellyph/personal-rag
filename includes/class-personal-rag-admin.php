@@ -39,18 +39,27 @@ class Personal_RAG_Admin {
 			return;
 		}
 
+		$asset_file = PERSONAL_RAG_DIR . 'build/index.asset.php';
+		$asset      = file_exists( $asset_file )
+			? include $asset_file
+			: array(
+				'dependencies' => array( 'wp-api-fetch', 'wp-components', 'wp-element', 'wp-i18n' ),
+				'version'      => PERSONAL_RAG_VERSION,
+			);
+
+		wp_enqueue_style( 'wp-components' );
 		wp_enqueue_style(
 			'personal-rag-admin',
 			PERSONAL_RAG_URL . 'assets/personal-rag.css',
-			array(),
-			PERSONAL_RAG_VERSION
+			array( 'wp-components' ),
+			$asset['version']
 		);
 
 		wp_enqueue_script(
 			'personal-rag-admin',
-			PERSONAL_RAG_URL . 'assets/personal-rag.js',
-			array( 'wp-i18n' ),
-			PERSONAL_RAG_VERSION,
+			PERSONAL_RAG_URL . 'build/index.js',
+			$asset['dependencies'],
+			$asset['version'],
 			true
 		);
 
@@ -58,21 +67,17 @@ class Personal_RAG_Admin {
 			wp_set_script_translations( 'personal-rag-admin', 'personal-rag', PERSONAL_RAG_DIR . 'languages' );
 		}
 
-		wp_localize_script(
+		wp_add_inline_script(
 			'personal-rag-admin',
-			'personalRagSettings',
-			array(
-				'restUrl'          => esc_url_raw( rest_url( PERSONAL_RAG_REST_NAMESPACE ) ),
-				'nonce'            => wp_create_nonce( 'wp_rest' ),
-				'canManageOptions' => current_user_can( 'manage_options' ),
-				'origin'           => esc_url_raw( home_url( '/' ) ),
-				'defaults'         => array(
-					'endpoint'       => 'http://localhost:11434',
-					'embeddingModel' => 'embeddinggemma',
-					'chatModel'      => 'gemma4:e4b',
-					'topK'           => 5,
-				),
-			)
+			'window.personalRagSettings = ' . wp_json_encode(
+				array(
+					'apiRoot'          => esc_url_raw( rest_url() ),
+					'restNamespace'    => PERSONAL_RAG_REST_NAMESPACE,
+					'nonce'            => wp_create_nonce( 'wp_rest' ),
+					'canManageOptions' => current_user_can( 'manage_options' ),
+				)
+			) . ';',
+			'before'
 		);
 	}
 

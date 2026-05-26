@@ -31,8 +31,29 @@ export function createPersonalRagBlueprint() {
 				},
 			},
 			{
+				step: 'installPlugin',
+				pluginData: {
+					resource: 'wordpress.org/plugins',
+					slug: 'ai-provider-for-ollama',
+				},
+				options: {
+					activate: true,
+					targetFolderName: 'ai-provider-for-ollama',
+				},
+				ifAlreadyInstalled: 'overwrite',
+			},
+			{
 				step: 'activatePlugin',
 				pluginPath: 'personal-rag/personal-rag.php',
+			},
+			{
+				step: 'mkdir',
+				path: '/wordpress/wp-content/mu-plugins',
+			},
+			{
+				step: 'writeFile',
+				path: '/wordpress/wp-content/mu-plugins/personal-rag-ai-mock.php',
+				data: aiMockMuPlugin(),
 			},
 			{
 				step: 'importWxr',
@@ -63,6 +84,7 @@ export async function startPersonalRagPlayground() {
 
 	const cli = await runCLI({
 		command: 'server',
+		port: 9410,
 		mount: [
 			{
 				hostPath: runtimePluginRoot,
@@ -88,7 +110,7 @@ function prepareRuntimePluginMirror() {
 		fs.copyFileSync(path.join(projectRoot, file), path.join(runtimePluginRoot, file));
 	}
 
-	for (const directory of ['assets', 'includes', 'languages']) {
+	for (const directory of ['assets', 'build', 'includes', 'languages']) {
 		const source = path.join(projectRoot, directory);
 		const destination = path.join(runtimePluginRoot, directory);
 		if (fs.existsSync(source)) {
@@ -137,24 +159,6 @@ export async function mockOllama(page) {
 		});
 	});
 
-	await page.route('http://localhost:11434/api/chat', async (route) => {
-		if (route.request().method() === 'OPTIONS') {
-			await route.fulfill({ status: 204, headers: corsHeaders });
-			return;
-		}
-
-		const chunks = [
-			{ message: { content: 'Blueprints use JSON configuration to set up WordPress Playground instances [1].' }, done: false },
-			{ done: true },
-		];
-
-		await route.fulfill({
-			status: 200,
-			headers: corsHeaders,
-			contentType: 'application/x-ndjson',
-			body: chunks.map((chunk) => JSON.stringify(chunk)).join('\n') + '\n',
-		});
-	});
 }
 
 export async function loginAsSubscriber(page, baseUrl) {
@@ -188,4 +192,47 @@ function vectorForInput(value) {
 	}
 
 	return [1, 0, 0];
+}
+
+function aiMockMuPlugin() {
+	return `<?php
+add_filter(
+	'personal_rag_ai_status',
+	function ( $status ) {
+		$status['aiClientAvailable']       = true;
+		$status['aiSupported']             = true;
+		$status['connectorsAvailable']     = true;
+		$status['textGenerationSupported'] = true;
+
+		if ( ! isset( $status['ollamaProvider'] ) || ! is_array( $status['ollamaProvider'] ) ) {
+			$status['ollamaProvider'] = array();
+		}
+
+		$status['ollamaProvider']['installed']           = true;
+		$status['ollamaProvider']['active']              = true;
+		$status['ollamaProvider']['connectorRegistered'] = true;
+		$status['ollamaProvider']['connectorId']         = 'ollama';
+
+		return $status;
+	}
+);
+
+add_filter(
+	'personal_rag_pre_generate_answer',
+	function ( $pre, $question, $matches ) {
+		return array(
+			'answer'  => 'Blueprints use JSON configuration to set up WordPress Playground instances [1].',
+			'sources' => $matches,
+			'status'  => array(
+				'aiClientAvailable'       => true,
+				'aiSupported'             => true,
+				'connectorsAvailable'     => true,
+				'textGenerationSupported' => true,
+			),
+		);
+	},
+	10,
+	3
+);
+`;
 }
